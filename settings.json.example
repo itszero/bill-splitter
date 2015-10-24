@@ -1,0 +1,20 @@
+{
+  "providers": [
+    "verizon",
+    "tmobile"
+  ],
+  "secrets": {
+    "tmobile": {
+      "username": "",
+      "password": ""
+    },
+    "verizon": {
+      "username": "",
+      "password": "",
+      "securityQuestion": ""
+    },
+    "pushbullet": {
+      "token": ""
+    }
+  }
+}

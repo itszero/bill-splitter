@@ -1,0 +1,29 @@
+{
+  "name": "bill-splitter",
+  "version": "0.0.0",
+  "description": "Calculate split bills.",
+  "repository": "",
+  "author": "Zero Cho <itszero@gmail.com>",
+  "dependencies": {
+    "babel": "^5.8.23",
+    "lodash": "^3.10.1",
+    "phantomjs": "^1.9.18",
+    "request": "^2.65.0",
+    "suspend": "^0.6.1",
+    "webdriverio": "^3.2.5"
+  },
+  "scripts": {
+    "start": "babel-node --stage 0 src/main.js",
+    "remote:start": "npm install && npm run start",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "babel-jest": "^5.3.0",
+    "jest-cli": "^0.6.1"
+  },
+  "jest": {
+    "scriptPreprocessor": "<rootDir>/node_modules/babel-jest",
+    "testFileExtensions": ["js"],
+    "moduleFileExtensions": ["js"]
+  }
+}
