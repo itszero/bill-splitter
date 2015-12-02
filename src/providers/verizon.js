@@ -18,13 +18,14 @@ export default async function main(webdriverOptions) {
   await client
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.username)
-    .click('#signInButton');
+    .click('#signInButton')
+    .waitForExist('iframe[name=login_overlay]', 100000);
+  await client.element('iframe[name=login_overlay]').then((res) => client.frame(res.value));
   log('logging in: security question');
   await client
     .waitForExist('#IDToken1', 100000)
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.securityQuestion)
-    .click('#rememberComputer')
     .click('button.o-red-button');
   log('logging in: password');
   await client
@@ -34,7 +35,7 @@ export default async function main(webdriverOptions) {
     .click('button.o-red-button');
 
   log('loading billing page');
-  await client.url('https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/BillViewLine.action');
+  await client.frame(null).url('https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/BillViewLine.action');
 
   const promise = client.execute(() => {
     function ArrayFrom(arr) {
@@ -79,3 +80,4 @@ export default async function main(webdriverOptions) {
     }
   );
 }
+

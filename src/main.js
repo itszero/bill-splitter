@@ -21,8 +21,8 @@ const phantomProc = childProcess.spawn(
 
 process.stdin.resume();
 function exitHandler(options, err) {
-    phantomProc.kill('SIGKILL');
-    if (options.exit) process.exit();
+  phantomProc.kill('SIGKILL');
+  if (options.exit) process.exit();
 }
 process.on('exit', exitHandler.bind(null, {cleanup: true}));
 process.on('SIGINT', exitHandler.bind(null, {exit: true}));
