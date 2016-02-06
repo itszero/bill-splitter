@@ -18,9 +18,9 @@ export default async function main(webdriverOptions) {
   await client
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.username)
-    .click('#signInButton')
-    .waitForExist('iframe[name=login_overlay]', 100000);
-  await client.element('iframe[name=login_overlay]').then((res) => client.frame(res.value));
+    .click('#login-submit')
+    .waitForExist('iframe[name=login-content]', 100000);
+  await client.element('iframe[name=login-content]').then((res) => client.frame(res.value));
   log('logging in: security question');
   await client
     .waitForExist('#IDToken1', 100000)
