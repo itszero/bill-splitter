@@ -14,15 +14,16 @@ export default async function main(webdriverOptions) {
 
   log('opening login page');
   await client.init().url('https://my.t-mobile.com')
-    .waitUntil(function() {
-      return this.getCssProperty('#spinner', 'display').then((display) => display.value === 'none');
-    }, 2000);
+    .waitForExist('#username', 5000);
   log('logging in');
-  await client.click('#msisdn').setValue('#msisdn', secrets.username)
+  await client.click('#username').setValue('#username', secrets.username)
     .click('#password').setValue('#password', secrets.password)
-    .click('#primary_button');
+    .click('.login-btn');
   log('loading billing page');
-  await client.url('https://my.t-mobile.com/billing/summary.html').waitForExist('.billing-amount', 10000);
+  await client
+    .waitForExist('#showLabel', 15000)
+    .url('https://my.t-mobile.com/billing/summary.html')
+    .waitForExist(".currentChargesRow .billing-amount", 15000);
 
   const promise = client.execute(() => {
     function ArrayFrom(arr) {
@@ -38,9 +39,8 @@ export default async function main(webdriverOptions) {
         return {
           name: chargeRow.querySelector("[id^='subscriberName']")
             .innerText.replace(',', '').trim(),
-          number: chargeRow.querySelector("[id^='subscriberMsisdn']").innerText,
           amount: parseFloat(
-            chargeRow.querySelector(".billing-amount").innerText.slice(1)
+            chargeRow.querySelector('.billing-amount').innerText.slice(1)
           )
         };
       });
