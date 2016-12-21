@@ -18,14 +18,13 @@ export default async function main(webdriverOptions) {
   await client
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.username)
-    .click('#login-submit')
-    .waitForExist('iframe[name=login-content]', 100000);
-  await client.element('iframe[name=login-content]').then((res) => client.frame(res.value));
+    .click('#login-submit');
   log('logging in: security question');
   await client
-    .waitForExist('#IDToken1', 100000)
+    .waitForExist('#challengequestion', 100000)
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.securityQuestion)
+    .click('#rememberComputer') /* uncheck the box */
     .click('button.o-red-button');
   log('logging in: password');
   await client

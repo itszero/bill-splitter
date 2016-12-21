@@ -50,7 +50,7 @@ export default async function main(webdriverOptions) {
     const users = charges.filter((c) => !isAccount(c));
 
     return {
-      period: $('#billPeriod').text().slice(1).trim(),
+      period: $('#selectedBillingCycle').text().slice(1).trim(),
       account,
       lines: users
     };
