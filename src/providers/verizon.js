@@ -16,6 +16,7 @@ export default async function main(webdriverOptions) {
   await client.init().url('https://login.verizonwireless.com/amserver/UI/Login?realm=vzw');
   log('logging in: username');
   await client
+    .waitForExist('#IDToken1', 100000)
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.username)
     .click('#login-submit');
