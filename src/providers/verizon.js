@@ -25,7 +25,7 @@ export default async function main(webdriverOptions) {
     .waitForExist('#challengequestion', 100000)
     .click('#IDToken1')
     .setValue('#IDToken1', secrets.securityQuestion)
-    .click('#rememberComputer') /* uncheck the box */
+    .click('label[for="rememberComputer"]') /* uncheck the box */
     .click('button.o-red-button');
   log('logging in: password');
   await client
@@ -36,6 +36,8 @@ export default async function main(webdriverOptions) {
 
   log('loading billing page');
   await client.url('https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/mybill.action')
+    .waitForExist('div[us-spinner]', 100000, false)
+    .waitForVisible('div[us-spinner]', 100000, true)
     .waitForExist('.o-charge-line-filter', 100000)
     .click('.o-charge-line-filter');
 
