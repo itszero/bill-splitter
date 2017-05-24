@@ -16,16 +16,16 @@ export default async function main(webdriverOptions) {
   await client.init().url('https://login.verizonwireless.com/amserver/UI/Login?realm=vzw');
   log('logging in: username');
   await client
-    .click('#IDToken1')
-    .setValue('#IDToken1', secrets.username)
-    .click('#login-submit')
-    .waitForExist('iframe[name=login-content]', 100000);
-  await client.element('iframe[name=login-content]').then((res) => client.frame(res.value));
-  log('logging in: security question');
-  await client
     .waitForExist('#IDToken1', 100000)
     .click('#IDToken1')
+    .setValue('#IDToken1', secrets.username)
+    .click('#login-submit');
+  log('logging in: security question');
+  await client
+    .waitForExist('#challengequestion', 100000)
+    .click('#IDToken1')
     .setValue('#IDToken1', secrets.securityQuestion)
+    .click('#rememberComputer') /* uncheck the box */
     .click('button.o-red-button');
   log('logging in: password');
   await client
@@ -35,7 +35,9 @@ export default async function main(webdriverOptions) {
     .click('button.o-red-button');
 
   log('loading billing page');
-  await client.frame(null).url('https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/BillViewLine.action');
+  await client.url('https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/mybill.action')
+    .waitForExist('.o-charge-line-filter', 100000)
+    .click('.o-charge-line-filter');
 
   const promise = client.execute(() => {
     function ArrayFrom(arr) {
@@ -46,16 +48,23 @@ export default async function main(webdriverOptions) {
       return out;
     }
 
-    const period = document.querySelector('.cc_content_wt h2').innerText.match(/\w+ \d{1,2}, \d{4}/g).slice(-1)[0];
+    function parseMoney(str) {
+      return parseFloat(str.replace('$', ''));
+    }
+
+    const period = document.querySelector('bill-select').attributes['selected-bill'].value;
     const account = {
       name: 'Account',
-      amount: parseFloat(document.getElementById('acctchrgsLink').parentNode.parentNode.parentNode.querySelector('[align="right"]').innerText.trim().slice(1))
+      amount: (
+        parseMoney(document.querySelector('[ng-if=balanceForwardDetails]').querySelector('.o-float-right.ng-binding').innerText) +
+        parseMoney(document.querySelector('[ng-if="breakdown.account"]').querySelector('.o-float-right.ng-binding').innerText)
+      )
     };
-    const lineDivs = ArrayFrom(document.querySelectorAll('[id^="div_1_"]'));
+    const lineDivs = ArrayFrom(document.querySelector('[ng-if="breakdown.mtns"]').querySelectorAll('[ng-repeat]'));
     const users = lineDivs.map((row) => {
-      const amount = parseFloat(ArrayFrom(row.querySelectorAll('b')).slice(-1)[0].innerText.trim().slice(1));
+      const amount = parseMoney(row.querySelector('.o-float-right.ng-binding').innerText);
       return {
-        name: row.querySelector('.mybillNickName').innerText.trim(),
+        name: row.querySelector('.o-bold.ng-binding').innerText.trim(),
         amount
       };
     });

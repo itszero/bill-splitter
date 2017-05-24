@@ -14,7 +14,7 @@ export default async function main(webdriverOptions) {
 
   log('opening login page');
   await client.init().url('https://my.t-mobile.com')
-    .waitForExist('#username', 5000);
+    .waitForExist('#username', 15000);
   log('logging in');
   await client.click('#username').setValue('#username', secrets.username)
     .click('#password').setValue('#password', secrets.password)
