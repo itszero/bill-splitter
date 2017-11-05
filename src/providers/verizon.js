@@ -1,72 +1,93 @@
-import { addSharedCost, createLogger, readConfig, mergeSamePersonLines } from '../utils';
-import webdriverio from 'webdriverio';
+const {
+  addSharedCost,
+  createLogger,
+  readConfig,
+  mergeSamePersonLines
+} = require("../utils");
+const webdriverio = require("webdriverio");
 
-const log = createLogger('Verizon');
+const log = createLogger("Verizon");
 
-export const name = 'Verizon';
-export default async function main(webdriverOptions) {
-  const {
-    secrets: {
-      verizon: secrets
-    }
-  } = readConfig();
+exports.name = "Verizon";
+exports.default = async function main(webdriverOptions) {
+  const { secrets: { verizon: secrets } } = readConfig();
   const client = webdriverio.remote(webdriverOptions);
 
-  log('opening login page');
-  await client.init().url('https://login.verizonwireless.com/amserver/UI/Login?realm=vzw');
-  log('logging in: username');
+  log("opening login page");
   await client
-    .waitForExist('#IDToken1', 100000)
-    .click('#IDToken1')
-    .setValue('#IDToken1', secrets.username)
-    .click('#login-submit');
-  log('logging in: security question');
+    .init()
+    .url("https://login.verizonwireless.com/amserver/UI/Login?realm=vzw");
+  log("logging in: username");
   await client
-    .waitForExist('#challengequestion', 100000)
-    .click('#IDToken1')
-    .setValue('#IDToken1', secrets.securityQuestion)
+    .waitForExist("#IDToken1", 100000)
+    .click("#IDToken1")
+    .setValue("#IDToken1", secrets.username)
+    .click("#login-submit");
+  log("logging in: security question");
+  await client
+    .waitForExist("#challengequestion", 100000)
+    .click("#IDToken1")
+    .setValue("#IDToken1", secrets.securityQuestion)
     .click('label[for="rememberComputer"]') /* uncheck the box */
-    .click('button.o-red-button');
-  log('logging in: password');
+    .click("button.o-red-button");
+  log("logging in: password");
   await client
-    .waitForExist('#IDToken2', 100000)
-    .click('#IDToken2')
-    .setValue('#IDToken2', secrets.password)
-    .click('button.o-red-button');
+    .waitForExist("#IDToken2", 100000)
+    .click("#IDToken2")
+    .setValue("#IDToken2", secrets.password)
+    .click("button.o-red-button");
 
-  log('loading billing page');
-  await client.url('https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/mybill.action')
-    .waitForExist('div[us-spinner]', 100000, false)
-    .waitForVisible('div[us-spinner]', 100000, true)
-    .waitForExist('.o-charge-line-filter', 100000)
-    .click('.o-charge-line-filter');
+  log("loading billing page");
+  await client
+    .url(
+      "https://ebillpay.verizonwireless.com/vzw/accountholder/mybill/mybill.action"
+    )
+    .waitForExist("div[us-spinner]", 100000, false)
+    .waitForVisible("div[us-spinner]", 100000, true)
+    .waitForExist(".o-charge-line-filter", 100000)
+    .click(".o-charge-line-filter");
 
   const promise = client.execute(() => {
     function ArrayFrom(arr) {
       const out = [];
-      for (var i=0;i<arr.length;i++) {
+      for (var i = 0; i < arr.length; i++) {
         out.push(arr[i]);
       }
       return out;
     }
 
     function parseMoney(str) {
-      return parseFloat(str.replace('$', ''));
+      return parseFloat(str.replace("$", ""));
     }
 
-    const period = document.querySelector('bill-select').attributes['selected-bill'].value;
+    const period = document.querySelector("bill-select").attributes[
+      "selected-bill"
+    ].value;
     const account = {
-      name: 'Account',
-      amount: (
-        parseMoney(document.querySelector('[ng-if=balanceForwardDetails]').querySelector('.o-float-right.ng-binding').innerText) +
-        parseMoney(document.querySelector('[ng-if="breakdown.account"]').querySelector('.o-float-right.ng-binding').innerText)
-      )
+      name: "Account",
+      amount:
+        parseMoney(
+          document
+            .querySelector("[ng-if=balanceForwardDetails]")
+            .querySelector(".o-float-right.ng-binding").innerText
+        ) +
+        parseMoney(
+          document
+            .querySelector('[ng-if="breakdown.account"]')
+            .querySelector(".o-float-right.ng-binding").innerText
+        )
     };
-    const lineDivs = ArrayFrom(document.querySelector('[ng-if="breakdown.mtns"]').querySelectorAll('[ng-repeat]'));
-    const users = lineDivs.map((row) => {
-      const amount = parseMoney(row.querySelector('.o-float-right.ng-binding').innerText);
+    const lineDivs = ArrayFrom(
+      document
+        .querySelector('[ng-if="breakdown.mtns"]')
+        .querySelectorAll("[ng-repeat]")
+    );
+    const users = lineDivs.map(row => {
+      const amount = parseMoney(
+        row.querySelector(".o-float-right.ng-binding").innerText
+      );
       return {
-        name: row.querySelector('.o-bold.ng-binding').innerText.trim(),
+        name: row.querySelector(".o-bold.ng-binding").innerText.trim(),
         amount
       };
     });
@@ -79,16 +100,18 @@ export default async function main(webdriverOptions) {
   });
 
   return promise.then(
-    (ret) => {
+    ret => {
       client.end();
       const data = ret.value;
-      data.lines = addSharedCost(mergeSamePersonLines(data.lines), data.account.amount);
+      data.lines = addSharedCost(
+        mergeSamePersonLines(data.lines),
+        data.account.amount
+      );
       return data;
     },
-    (err) => {
+    err => {
       client.end();
       throw err;
     }
   );
-}
-
+};

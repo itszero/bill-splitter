@@ -1,2 +1,3 @@
 #!/bin/bash
-docker run --rm=true -w /code -v `pwd`:/code itszero/bsbase:4.2 npm run remote:start
+cd /home/zero/src/bill-splitter
+docker run --rm=true -w /code -v `pwd`:/code itszero/bill-splitter npm run remote:start

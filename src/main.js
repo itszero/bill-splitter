@@ -1,58 +1,78 @@
-require('babel/polyfill');
-import childProcess from 'child_process';
-import path from 'path';
-import phantomjs from 'phantomjs';
-import push from './push';
-import { readConfig, wait } from './utils';
+#!/usr/bin/env node
+const path = require("path");
+const push = require("./push").default;
+const { readConfig } = require("./utils");
+const selenium = require('selenium-standalone');
 
 const config = readConfig();
 const webdriverOptions = {
-  port: 8910, // 9515 for local ChromeDriver
-  path: '/'
-};
-const phantomPath = phantomjs.path;
-const phantomProc = childProcess.spawn(
-  phantomPath,
-  ['--load-images=false', '--webdriver=8910'],
-  {
-    stdio: 'pipe'
+  desiredCapabilities: {
+    browserName: "chrome",
+    chromeOptions: {
+      args: ["headless", "disable-gpu", "no-sandbox"]
+    }
   }
-);
-
-process.stdin.resume();
-function exitHandler(options, err) {
-  phantomProc.kill('SIGKILL');
-  if (options.exit) process.exit();
-}
-process.on('exit', exitHandler.bind(null, {cleanup: true}));
-process.on('SIGINT', exitHandler.bind(null, {exit: true}));
+};
 
 function runProviders() {
-  return Promise.all(
-    config.providers.map(async (provider) => {
-      const f = require(`./providers/${provider}.js`);
-      console.log(`Provider: ${f.name}`);
-      try {
-        const data = await f.default(webdriverOptions);
-        console.log(JSON.stringify(data));
-        console.log(`${f.name}: Sending a push`);
-        return push(f.name, data);
-      } catch (err) {
-        console.log(err);
-        console.log(err.stack);
-        return Promise.reject(err);
-      }
-    })
+  return config.providers.reduce(
+    (promise, provider) =>
+      promise.then(async () => {
+        const f = require(`./providers/${provider}.js`);
+        console.log(`Provider: ${f.name}`);
+        try {
+          const data = await f.default(webdriverOptions);
+          console.log(JSON.stringify(data));
+          console.log(`${f.name}: Sending a push`);
+          return push(f.name, data);
+        } catch (err) {
+          console.log(err);
+          console.log(err.stack);
+          return Promise.reject(err);
+        }
+      }),
+    Promise.resolve()
   );
 }
 
-console.log('wait 1000ms for phantomjs');
-setTimeout(() => {
-  runProviders()
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.log(err);
-      console.log(err.stack);
-      process.exit(1)
+function seleniumInstall(opts) {
+  return new Promise((resolve, reject) => {
+    console.log("> Installing selenium");
+    selenium.install(opts, (err) => {
+      err && reject(err) || resolve();
     });
-}, 1000);
+  });
+}
+
+function seleniumStart(opts) {
+  let seleniumProcess = undefined;
+  return new Promise((resolve, reject) => {
+    console.log("> Starting selenium");
+    selenium.start(opts, (err, child) => {
+      selneiumProcess = child;
+      err && reject(err) || resolve(child);
+    });
+  });
+}
+
+const defaultSeleniumOptions = require('selenium-standalone/lib/default-config');
+const standaloneSeleniumOptions = {
+  ...defaultSeleniumOptions,
+  drivers: {
+    chrome: defaultSeleniumOptions['drivers']['chrome']
+  }
+};
+
+seleniumInstall(standaloneSeleniumOptions)
+  .then(() => seleniumStart(standaloneSeleniumOptions))
+  .then((child) => {
+    const killProcess = () => child && child.kill();
+    return runProviders().then(killProcess, killProcess);
+  })
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.log(err);
+    console.log(err.stack);
+    process.exit(1);
+  });
+
